@@ -1,0 +1,723 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Capacity Connect API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: dashboard
+  - name: courses
+  - name: competencies
+  - name: trainers
+  - name: notifications
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /v1/me:
+    get:
+      operationId: getCurrentUser
+      tags: [dashboard]
+      summary: Get the current demo user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /v1/dashboard/trainee:
+    get:
+      operationId: getTraineeDashboard
+      tags: [dashboard]
+      summary: Get trainee dashboard data
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraineeDashboard"
+  /v1/courses:
+    get:
+      operationId: listCourses
+      tags: [courses]
+      summary: List published courses
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: difficulty
+          in: query
+          schema: { type: string }
+        - name: subject
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Course list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Course" }
+    post:
+      operationId: createCourse
+      tags: [courses]
+      summary: Create a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "201":
+          description: Created course
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+  /v1/courses/{courseId}:
+    get:
+      operationId: getCourse
+      tags: [courses]
+      summary: Get course details
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Course
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseDetail" }
+        "404": { description: Course not found }
+  /v1/courses/{courseId}/enroll:
+    post:
+      operationId: enrollInCourse
+      tags: [courses]
+      summary: Enroll the current trainee
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "201":
+          description: Enrollment created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Enrollment" }
+  /v1/courses/{courseId}/complete:
+    post:
+      operationId: completeCourse
+      tags: [courses]
+      summary: Complete a course and issue a certificate
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Updated enrollment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Enrollment" }
+  /v1/competencies:
+    get:
+      operationId: listCompetencies
+      tags: [competencies]
+      summary: List competency signals for the current trainee
+      responses:
+        "200":
+          description: Competencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Competency" }
+  /v1/competencies/gaps:
+    get:
+      operationId: listCompetencyGaps
+      tags: [competencies]
+      summary: List competency gaps and recommendations
+      responses:
+        "200":
+          description: Competency gaps
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CompetencyGap" }
+  /v1/subjects/{subjectId}/recommended-trainers:
+    get:
+      operationId: listRecommendedTrainers
+      tags: [trainers]
+      summary: Rank trainers for a subject
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Ranked trainer recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TrainerRecommendation" }
+  /v1/notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Notification" }
+  /v1/notifications/{notificationId}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+  /v1/workspace/{role}:
+    get:
+      operationId: getRoleWorkspace
+      tags: [dashboard]
+      summary: Get role-specific workspace data
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [trainee, trainer, admin]
+      responses:
+        "200":
+          description: Role workspace
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoleWorkspace" }
+  /v1/workspace/actions:
+    post:
+      operationId: submitWorkspaceAction
+      tags: [dashboard]
+      summary: Perform a role workspace action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WorkspaceActionInput" }
+      responses:
+        "200":
+          description: Action result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    User:
+      type: object
+      required: [id, name, role, department, avatarInitials]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string }
+        department: { type: string }
+        avatarInitials: { type: string }
+    CourseInput:
+      type: object
+      required: [title, subject, difficulty, durationHours, description]
+      properties:
+        title: { type: string, minLength: 3 }
+        subject: { type: string }
+        difficulty: { type: string }
+        durationHours: { type: number }
+        description: { type: string }
+    Course:
+      type: object
+      required: [id, title, subject, difficulty, durationHours, trainer, rating, enrolled, progress, thumbnailTone]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subject: { type: string }
+        difficulty: { type: string }
+        durationHours: { type: number }
+        trainer: { type: string }
+        rating: { type: number }
+        enrolled: { type: integer }
+        progress: { type: integer }
+        thumbnailTone: { type: string }
+    CourseModule:
+      type: object
+      required: [id, title, durationMinutes, completed]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        durationMinutes: { type: integer }
+        completed: { type: boolean }
+    CourseDetail:
+      allOf:
+        - $ref: "#/components/schemas/Course"
+        - type: object
+          required: [description, objectives, modules, trainerBio, nextSession]
+          properties:
+            description: { type: string }
+            objectives:
+              type: array
+              items: { type: string }
+            modules:
+              type: array
+              items: { $ref: "#/components/schemas/CourseModule" }
+            trainerBio: { type: string }
+            nextSession: { type: string }
+    Enrollment:
+      type: object
+      required: [courseId, progress, status, certificateId]
+      properties:
+        courseId: { type: string }
+        progress: { type: integer }
+        status: { type: string }
+        certificateId: { type: ["string", "null"] }
+    Competency:
+      type: object
+      required: [id, name, score, level, levelTitle, trend, color]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        score: { type: number }
+        level: { type: integer }
+        levelTitle: { type: string }
+        trend: { type: number }
+        color: { type: string }
+    CompetencyGap:
+      type: object
+      required: [id, name, currentLevel, requiredLevel, gap, priority, recommendedCourse, recommendedTrainer]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        currentLevel: { type: integer }
+        requiredLevel: { type: integer }
+        gap: { type: integer }
+        priority: { type: string }
+        recommendedCourse: { type: string }
+        recommendedTrainer: { type: string }
+    TrainerRecommendation:
+      type: object
+      required: [id, name, title, matchScore, eligible, experienceYears, relevantTrainings, strongestCompetencies, missingCompetencies, reasoning]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        title: { type: string }
+        matchScore: { type: number }
+        eligible: { type: boolean }
+        experienceYears: { type: integer }
+        relevantTrainings: { type: integer }
+        strongestCompetencies:
+          type: array
+          items: { type: string }
+        missingCompetencies:
+          type: array
+          items: { type: string }
+        reasoning: { type: string }
+    Notification:
+      type: object
+      required: [id, type, title, description, time, read]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        description: { type: string }
+        time: { type: string }
+        read: { type: boolean }
+    TraineeDashboard:
+      type: object
+      required: [user, stats, competencies, gaps, recommendations, activity, notifications]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        stats:
+          type: object
+          required: [enrolledCourses, activeCourses, completedCourses, certificates]
+          properties:
+            enrolledCourses: { type: integer }
+            activeCourses: { type: integer }
+            completedCourses: { type: integer }
+            certificates: { type: integer }
+        competencies:
+          type: array
+          items: { $ref: "#/components/schemas/Competency" }
+        gaps:
+          type: array
+          items: { $ref: "#/components/schemas/CompetencyGap" }
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/Course" }
+        activity:
+          type: array
+          items:
+            type: object
+            required: [id, label, detail, time, tone]
+            properties:
+              id: { type: string }
+              label: { type: string }
+              detail: { type: string }
+              time: { type: string }
+              tone: { type: string }
+        notifications:
+          type: array
+          items: { $ref: "#/components/schemas/Notification" }
+    Profile:
+      type: object
+      required: [name, email, phone, location, organization, department, biography, skills, interests, qualifications, experience, certificates]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        location: { type: string }
+        organization: { type: string }
+        department: { type: string }
+        biography: { type: string }
+        skills:
+          type: array
+          items: { type: string }
+        interests:
+          type: array
+          items: { type: string }
+        qualifications:
+          type: array
+          items:
+            type: object
+            required: [degree, institution, field, year]
+            properties:
+              degree: { type: string }
+              institution: { type: string }
+              field: { type: string }
+              year: { type: integer }
+        experience:
+          type: array
+          items:
+            type: object
+            required: [organization, designation, period, description]
+            properties:
+              organization: { type: string }
+              designation: { type: string }
+              period: { type: string }
+              description: { type: string }
+        certificates:
+          type: array
+          items:
+            type: object
+            required: [name, issuer, issued, status]
+            properties:
+              name: { type: string }
+              issuer: { type: string }
+              issued: { type: string }
+              status: { type: string }
+    LearningItem:
+      type: object
+      required: [id, courseId, title, subject, progress, status, nextModule, modules]
+      properties:
+        id: { type: string }
+        courseId: { type: string }
+        title: { type: string }
+        subject: { type: string }
+        progress: { type: integer }
+        status: { type: string }
+        nextModule: { type: string }
+        modules:
+          type: array
+          items: { $ref: "#/components/schemas/CourseModule" }
+    Assessment:
+      type: object
+      required: [id, title, subject, course, status, questions, durationMinutes, deadline, passingScore]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subject: { type: string }
+        course: { type: string }
+        status: { type: string }
+        questions: { type: integer }
+        durationMinutes: { type: integer }
+        deadline: { type: string }
+        passingScore: { type: integer }
+    AssessmentResult:
+      type: object
+      required: [id, assessment, score, percentage, status, correct, incorrect, skipped, timeTaken, competencyBreakdown]
+      properties:
+        id: { type: string }
+        assessment: { type: string }
+        score: { type: integer }
+        percentage: { type: number }
+        status: { type: string }
+        correct: { type: integer }
+        incorrect: { type: integer }
+        skipped: { type: integer }
+        timeTaken: { type: string }
+        competencyBreakdown:
+          type: array
+          items:
+            type: object
+            required: [name, percentage]
+            properties:
+              name: { type: string }
+              percentage: { type: number }
+    Certificate:
+      type: object
+      required: [id, title, course, issued, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        course: { type: string }
+        issued: { type: string }
+        status: { type: string }
+    LibraryItem:
+      type: object
+      required: [id, title, description, subject, category, format, visibility, status, size]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        subject: { type: string }
+        category: { type: string }
+        format: { type: string }
+        visibility: { type: string }
+        status: { type: string }
+        size: { type: string }
+    TrainerDashboard:
+      type: object
+      required: [courses, learners, completionRate, assessmentAverage, feedbackScore, upcoming, strengths]
+      properties:
+        courses: { type: integer }
+        learners: { type: integer }
+        completionRate: { type: number }
+        assessmentAverage: { type: number }
+        feedbackScore: { type: number }
+        upcoming:
+          type: array
+          items: { type: string }
+        strengths:
+          type: array
+          items: { $ref: "#/components/schemas/Competency" }
+    ParticipationRow:
+      type: object
+      required: [id, trainee, course, enrollmentDate, progress, assessment, score, completion]
+      properties:
+        id: { type: string }
+        trainee: { type: string }
+        course: { type: string }
+        enrollmentDate: { type: string }
+        progress: { type: integer }
+        assessment: { type: string }
+        score: { type: number }
+        completion: { type: string }
+    TrainerPerformance:
+      type: object
+      required: [monthlyCompletion, subjectPerformance, feedback, trainingSessions]
+      properties:
+        monthlyCompletion:
+          type: array
+          items:
+            type: object
+            required: [month, value]
+            properties:
+              month: { type: string }
+              value: { type: number }
+        subjectPerformance:
+          type: array
+          items:
+            type: object
+            required: [subject, score]
+            properties:
+              subject: { type: string }
+              score: { type: number }
+        feedback: { type: number }
+        trainingSessions: { type: integer }
+    AdminDashboard:
+      type: object
+      required: [users, pendingApprovals, trainees, trainers, courses, enrollments, certificates, assessments, participationRate, enrollmentTrend, subjectPopularity, competencyDistribution]
+      properties:
+        users: { type: integer }
+        pendingApprovals: { type: integer }
+        trainees: { type: integer }
+        trainers: { type: integer }
+        courses: { type: integer }
+        enrollments: { type: integer }
+        certificates: { type: integer }
+        assessments: { type: integer }
+        participationRate: { type: number }
+        enrollmentTrend:
+          type: array
+          items:
+            type: object
+            required: [month, value]
+            properties:
+              month: { type: string }
+              value: { type: number }
+        subjectPopularity:
+          type: array
+          items:
+            type: object
+            required: [subject, value]
+            properties:
+              subject: { type: string }
+              value: { type: number }
+        competencyDistribution:
+          type: array
+          items:
+            type: object
+            required: [level, value]
+            properties:
+              level: { type: string }
+              value: { type: number }
+    AdminUser:
+      type: object
+      required: [id, name, email, role, status, department, joined]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string }
+        status: { type: string }
+        department: { type: string }
+        joined: { type: string }
+    ContentItem:
+      type: object
+      required: [id, type, title, description, status, audience, date]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        audience: { type: string }
+        date: { type: string }
+    AuditEntry:
+      type: object
+      required: [id, actor, action, entity, time, detail]
+      properties:
+        id: { type: string }
+        actor: { type: string }
+        action: { type: string }
+        entity: { type: string }
+        time: { type: string }
+        detail: { type: string }
+    CompetencyConfig:
+      type: object
+      required: [weights, levels, passingScore, maxFileSize]
+      properties:
+        weights:
+          type: object
+          required: [qualification, experience, certification, assessment, trainingHistory, verification]
+          properties:
+            qualification: { type: integer }
+            experience: { type: integer }
+            certification: { type: integer }
+            assessment: { type: integer }
+            trainingHistory: { type: integer }
+            verification: { type: integer }
+        levels:
+          type: array
+          items:
+            type: object
+            required: [number, title, threshold]
+            properties:
+              number: { type: integer }
+              title: { type: string }
+              threshold: { type: integer }
+        passingScore: { type: integer }
+        maxFileSize: { type: string }
+    RoleWorkspace:
+      type: object
+      required: [role, profile, learning, assessments, results, certificates, library, trainerDashboard, participation, performance, adminDashboard, users, content, audit, competencyConfig]
+      properties:
+        role: { type: string }
+        profile: { $ref: "#/components/schemas/Profile" }
+        learning:
+          type: array
+          items: { $ref: "#/components/schemas/LearningItem" }
+        assessments:
+          type: array
+          items: { $ref: "#/components/schemas/Assessment" }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/AssessmentResult" }
+        certificates:
+          type: array
+          items: { $ref: "#/components/schemas/Certificate" }
+        library:
+          type: array
+          items: { $ref: "#/components/schemas/LibraryItem" }
+        trainerDashboard: { $ref: "#/components/schemas/TrainerDashboard" }
+        participation:
+          type: array
+          items: { $ref: "#/components/schemas/ParticipationRow" }
+        performance: { $ref: "#/components/schemas/TrainerPerformance" }
+        adminDashboard: { $ref: "#/components/schemas/AdminDashboard" }
+        users:
+          type: array
+          items: { $ref: "#/components/schemas/AdminUser" }
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/ContentItem" }
+        audit:
+          type: array
+          items: { $ref: "#/components/schemas/AuditEntry" }
+        competencyConfig: { $ref: "#/components/schemas/CompetencyConfig" }
+    WorkspaceActionInput:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string }
+        targetId: { type: ["string", "null"] }
+        payload:
+          type: object
+          additionalProperties: true
+    ActionResult:
+      type: object
+      required: [action, message, workspaceVersion]
+      properties:
+        action: { type: string }
+        message: { type: string }
+        workspaceVersion: { type: integer }
+
